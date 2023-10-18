@@ -1,5 +1,5 @@
 Flask==2.2.2
 Flask-Cors==4.0.0
-click==7.1.2
 MIDIUtil==1.2.1
 pyo==1.0.1
+click>=7.1.2

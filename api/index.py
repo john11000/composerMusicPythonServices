@@ -6,7 +6,6 @@ from api.controllers.auth import AuthController
 
 app = Server.getServer()
 AuthController = AuthController()
-CORS(app)
 
 
 @app.route("/public/<path:filename>")
@@ -84,4 +83,5 @@ def list_music(token):
 
 
 if __name__ == '__main__':
+    CORS(app)
     app.run(debug=True)

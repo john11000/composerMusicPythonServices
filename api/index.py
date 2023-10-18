@@ -1,11 +1,12 @@
 import os
 from api.serverComposer import Server
 from flask import jsonify, request, send_file
+from flask_cors import CORS
 from api.controllers.auth import AuthController
 
 app = Server.getServer()
 AuthController = AuthController()
-
+CORS(app)
 
 
 @app.route("/public/<path:filename>")

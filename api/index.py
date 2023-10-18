@@ -1,9 +1,9 @@
 import os
-import serverComposer
+from api.serverComposer import Server
 from flask import jsonify, request, send_file
 from controllers.auth import AuthController
 
-app = serverComposer.server.getServer()
+app = Server.getServer()
 AuthController = AuthController()
 
 

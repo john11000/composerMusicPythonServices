@@ -1,5 +1,5 @@
 import os
-import .serverComposer as serverComposer
+import serverComposer
 from flask import jsonify, request, send_file
 from controllers.auth import AuthController
 

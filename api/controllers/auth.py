@@ -1,7 +1,7 @@
 
 import hashlib
 # Conexion a mongodb
-from db.connection import Database
+from api.db.connection import Database
 client = Database().getConnection()
 
 musicComposerDB = client.musicComposerCollection

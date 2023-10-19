@@ -9,7 +9,7 @@ class UserMusicController():
         pass
     
     def getListMusicGenerated(self):
-        return filesDb.find({}, {'id': 0})
+        return filesDb.find({}, {'_id': 0})
 
     def GenerateMusic(self):
         pass

@@ -16,100 +16,39 @@ BITS_PER_NOTE = 4
 KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"]
 SCALES = ["major", "minorM", "dorian", "phrygian", "lydian", "mixolydian", "majorBlues", "minorBlues"]
 
+
 class MgenController():
 
-    def int_from_bits(self,bits: List[int]) -> int:
-        return int(sum([bit*pow(2, index) for index, bit in enumerate(bits)]))
+    def int_from_bits(self, bits: List[int]) -> int:
+        return int(sum([bit * pow(2, index) for index, bit in enumerate(bits)]))
 
-
-    def genome_to_melody(self,genome: Genome, num_bars: int, num_notes: int, num_steps: int,
+    def genome_to_melody(self, genome: Genome, num_bars: int, num_notes: int, num_steps: int,
                         pauses: int, key: str, scale: str, root: int) -> Dict[str, list]:
         notes = [genome[i * BITS_PER_NOTE:i * BITS_PER_NOTE + BITS_PER_NOTE] for i in range(num_bars * num_notes)]
 
         note_length = 4 / float(num_notes)
 
-        scl = EventScale(root=key, scale=scale, first=root)
-
+        # Replace Pyo-related code with MIDI generation logic here
         melody = {
-            "notes": [],
-            "velocity": [],
-            "beat": []
+            "notes": [random.randint(0, 127) for _ in range(num_bars * num_notes)],
+            "velocity": [127 for _ in range(num_bars * num_notes)],
+            "beat": [note_length for _ in range(num_bars * num_notes)],
         }
-
-        for note in notes:
-            integer = self.int_from_bits(note)
-
-            if not pauses:
-                integer = int(integer % pow(2, BITS_PER_NOTE - 1))
-
-            if integer >= pow(2, BITS_PER_NOTE - 1):
-                melody["notes"] += [0]
-                melody["velocity"] += [0]
-                melody["beat"] += [note_length]
-            else:
-                if len(melody["notes"]) > 0 and melody["notes"][-1] == integer:
-                    melody["beat"][-1] += note_length
-                else:
-                    melody["notes"] += [integer]
-                    melody["velocity"] += [127]
-                    melody["beat"] += [note_length]
 
         steps = []
         for step in range(num_steps):
-            steps.append([scl[(note+step*2) % len(scl)] for note in melody["notes"]])
+            steps.append([note for note in melody["notes"]])
 
         melody["notes"] = steps
         return melody
 
-
-    def genome_to_events(self,genome: Genome, num_bars: int, num_notes: int, num_steps: int,
-                        pauses: bool, key: str, scale: str, root: int, bpm: int) -> [Events]:
-        melody = self.genome_to_melody(genome, num_bars, num_notes, num_steps, pauses, key, scale, root)
-
-        return [
-            Events(
-                midinote=EventSeq(step, occurrences=1),
-                midivel=EventSeq(melody["velocity"], occurrences=1),
-                beat=EventSeq(melody["beat"], occurrences=1),
-                attack=0.001,
-                decay=0.05,
-                sustain=0.5,
-                release=0.005,
-                bpm=bpm
-            ) for step in melody["notes"]
-        ]
-
-
-    def fitness(self,genome: Genome, s: Server, num_bars: int, num_notes: int, num_steps: int,
+    def fitness(self, genome: Genome, num_bars: int, num_notes: int, num_steps: int,
                 pauses: bool, key: str, scale: str, root: int, bpm: int) -> int:
-        m = self.metronome(bpm)
-
-        events = self.genome_to_events(genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)
-        for e in events:
-            e.play()
-        s.start()
-
-        # Asignar un valor fijo a 'rating', por ejemplo, 4
-        rating = 4
-
-        for e in events:
-            e.stop()
-        s.stop()
-        time.sleep(1)
-
+        # Replace Pyo-related code with fitness evaluation here
+        rating = 4  # Assign a fixed value for 'rating'
         return rating
 
-
-
-    def metronome(self,bpm: int):
-        met = Metro(time=1 / (bpm / 60.0)).play()
-        t = CosTable([(0, 0), (50, 1), (200, .3), (500, 0)])
-        amp = TrigEnv(met, table=t, dur=.25, mul=1)
-        freq = Iter(met, choice=[660, 440, 440, 440])
-        return Sine(freq=freq, mul=amp).mix(2).out()
-
-
-    def save_genome_to_midi(self,filename: str, genome: Genome, num_bars: int, num_notes: int, num_steps: int,
+    def save_genome_to_midi(self, filename: str, genome: Genome, num_bars: int, num_notes: int, num_steps: int,
                             pauses: bool, key: str, scale: str, root: int, bpm: int):
         melody = self.genome_to_melody(genome, num_bars, num_notes, num_steps, pauses, key, scale, root)
 
@@ -133,39 +72,25 @@ class MgenController():
             time += melody["beat"][i]
 
         # Convert the MIDI data to bytes
-        # Crear un objeto BytesIO para almacenar los datos MIDI
         midi_buffer = BytesIO()
-
-        # Escribir los datos MIDI en el buffer
         mf.writeFile(midi_buffer)
-
-        # Obtener los bytes de la secuencia
         midi_data = midi_buffer.getvalue()
-
-        # Cerrar el buffer
         midi_buffer.close()
 
-
-        # Codificar los datos binarios en Base64
+        # Encode binary data in Base64
         midi_data_base64 = base64.b64encode(midi_data).decode('utf-8')
 
-        # Guardar los bytes en la base de datos MongoDB
+        # Save the bytes to the MongoDB database
         musicComposerDBFiles.insert_one({"filename": filename, "midi_data": midi_data_base64})
 
-
-
-    def main(self,num_bars = 8,num_notes = 4,num_steps = 1,pauses = True,key = "C",scale = "major",root = 4,population_size = 10,num_mutations = 2,mutation_probability = 0.5,bpm = 128):
+    def main(self, num_bars=8, num_notes=4, num_steps=1, pauses=True, key="C", scale="major", root=4,
+             population_size=10, num_mutations=2, mutation_probability=0.5, bpm=128):
 
         folder = f"{str(int(datetime.now().timestamp()))}"
 
-        # Asegurarse de que la carpeta exista
         os.makedirs(folder, exist_ok=True)
 
         population = [generate_genome(num_bars * num_notes * BITS_PER_NOTE) for _ in range(population_size)]
-
-        s = Server().boot()
-        s.setMidiInputDevice(99)
-        s.setMidiOutputDevice(99)
 
         population_id = 0
 
@@ -173,7 +98,7 @@ class MgenController():
         while running:
             random.shuffle(population)
 
-            population_fitness = [(genome, self.fitness(genome, s, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)) for genome in population]
+            population_fitness = [(genome, self.fitness(genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)) for genome in population]
 
             sorted_population_fitness = sorted(population_fitness, key=lambda e: e[1], reverse=True)
 
@@ -197,9 +122,6 @@ class MgenController():
 
             print(f"population {population_id} done")
 
-            # No mostrar mensajes ni reproducción de sonidos aquí
-
-            # Comprobar que los archivos se están guardando en la carpeta
             for i, genome in enumerate(population):
                 filename = f"{folder}/{scale}-{key}-{i}.mid"
                 self.save_genome_to_midi(filename, genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)

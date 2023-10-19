@@ -1,3 +1,4 @@
+import base64
 from io import BytesIO
 import os
 import time
@@ -16,18 +17,7 @@ BITS_PER_NOTE = 4
 KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"]
 SCALES = ["major", "minorM", "dorian", "phrygian", "lydian", "mixolydian", "majorBlues", "minorBlues"]
 
-# Define los parámetros aquí
-num_bars = 8
-num_notes = 4
-num_steps = 1
-pauses = True
-key = "C"
-scale = "major"
-root = 4
-population_size = 10
-num_mutations = 2
-mutation_probability = 0.5
-bpm = 128
+
 
 
 def int_from_bits(bits: List[int]) -> int:
@@ -157,13 +147,18 @@ def save_genome_to_midi(filename: str, genome: Genome, num_bars: int, num_notes:
     # Cerrar el buffer
     midi_buffer.close()
 
+
+    # Codificar los datos binarios en Base64
+    midi_data_base64 = base64.b64encode(midi_data).decode('utf-8')
+
     # Guardar los bytes en la base de datos MongoDB
-    musicComposerDBFiles.insert_one({"filename": filename, "midi_data": Binary(midi_data)})
+    musicComposerDBFiles.insert_one({"filename": filename, "midi_data": midi_data_base64})
 
 
 
-def main():
-    folder = f"./public/{str(int(datetime.now().timestamp()))}"
+def main(num_bars = 8,num_notes = 4,num_steps = 1,pauses = True,key = "C",scale = "major",root = 4,population_size = 10,num_mutations = 2,mutation_probability = 0.5,bpm = 128):
+
+    folder = f"{str(int(datetime.now().timestamp()))}"
 
     # Asegurarse de que la carpeta exista
     os.makedirs(folder, exist_ok=True)

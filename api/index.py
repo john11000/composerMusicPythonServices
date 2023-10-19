@@ -4,10 +4,11 @@ from flask import jsonify, request, send_file
 from flask_cors import CORS
 from api.controllers.auth import AuthController
 from api.controllers.admin import UserMusicController
-from api.mgen import *
+from api.mgen import MgenController
 app = Server.getServer()
 AuthController = AuthController()
 UserMusicController = UserMusicController()
+MgenController = MgenController()
 
 @app.route("/public/<path:filename>")
 def public(filename):
@@ -76,7 +77,7 @@ def reset_password():
 
 @app.route('/admin/music/generate/<string:token>')
 def generate_music(token):
-    main()
+    MgenController.main()
     return f"Music generator for: {token}"
 
 @app.route('/admin/music/list/<string:token>')

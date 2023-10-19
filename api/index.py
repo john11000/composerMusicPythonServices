@@ -80,7 +80,7 @@ def generate_music(token):
 
 @app.route('/admin/music/list/<string:token>')
 def list_music(token):
-    return jsonify({ 'data' : UserMusicController.getListMusicGenerated() }) , 200
+    return jsonify({ 'data' : list(UserMusicController.getListMusicGenerated()) }) , 200
 
 
 if __name__ == '__main__':

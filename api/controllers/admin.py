@@ -2,13 +2,14 @@ from api.db.connection import Database
 client = Database().getConnection()
 musicComposerDB = client.musicComposerCollection
 
-class UserMusic():
+filesDb = musicComposerDB.files
+class UserMusicController():
 
     def __init__(self):
         pass
     
     def getListMusicGenerated(self):
-        pass
+        return filesDb.find({}, {'id': 0})
 
     def GenerateMusic(self):
         pass

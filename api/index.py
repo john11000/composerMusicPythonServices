@@ -3,10 +3,11 @@ from api.serverComposer import Server
 from flask import jsonify, request, send_file
 from flask_cors import CORS
 from api.controllers.auth import AuthController
+from api.controllers.admin import UserMusicController
 
 app = Server.getServer()
 AuthController = AuthController()
-
+UserMusicController = UserMusicController()
 
 @app.route("/public/<path:filename>")
 def public(filename):
@@ -79,7 +80,7 @@ def generate_music(token):
 
 @app.route('/admin/music/list/<string:token>')
 def list_music(token):
-    return jsonify({ 'data' : [] }) , 200
+    return jsonify({ 'data' : UserMusicController }) , 200
 
 
 if __name__ == '__main__':

@@ -1,12 +1,17 @@
+from io import BytesIO
+import os
+import time
+import random
+from bson import Binary
+from pyo import *
 from datetime import datetime
 from typing import List, Dict
 from midiutil import MIDIFile
-from pyo import *
-import random
-import os
-import time
+from api.db.connection import Database
 from algorithms.genetic import generate_genome, Genome, selection_pair, single_point_crossover, mutation
-
+client = Database().getConnection()
+musicComposerDB = client.musicComposerCollection
+musicComposerDBFiles = musicComposerDB.files
 BITS_PER_NOTE = 4
 KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"]
 SCALES = ["major", "minorM", "dorian", "phrygian", "lydian", "mixolydian", "majorBlues", "minorBlues"]
@@ -117,7 +122,7 @@ def metronome(bpm: int):
 
 
 def save_genome_to_midi(filename: str, genome: Genome, num_bars: int, num_notes: int, num_steps: int,
-                        pauses: bool, key: str, scale: str, root: int, bpm: int):
+                           pauses: bool, key: str, scale: str, root: int, bpm: int):
     melody = genome_to_melody(genome, num_bars, num_notes, num_steps, pauses, key, scale, root)
 
     if len(melody["notes"][0]) != len(melody["beat"]) or len(melody["notes"][0]) != len(melody["velocity"]):
@@ -139,9 +144,21 @@ def save_genome_to_midi(filename: str, genome: Genome, num_bars: int, num_notes:
 
         time += melody["beat"][i]
 
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    with open(filename, "wb") as f:
-        mf.writeFile(f)
+    # Convert the MIDI data to bytes
+    # Crear un objeto BytesIO para almacenar los datos MIDI
+    midi_buffer = BytesIO()
+
+    # Escribir los datos MIDI en el buffer
+    mf.writeFile(midi_buffer)
+
+    # Obtener los bytes de la secuencia
+    midi_data = midi_buffer.getvalue()
+
+    # Cerrar el buffer
+    midi_buffer.close()
+
+    # Guardar los bytes en la base de datos MongoDB
+    musicComposerDBFiles.insert_one({"filename": filename, "midi_data": Binary(midi_data)})
 
 
 

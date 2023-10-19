@@ -3,7 +3,6 @@ from io import BytesIO
 import os
 import time
 import random
-from bson import Binary
 from pyo import *
 from datetime import datetime
 from typing import List, Dict

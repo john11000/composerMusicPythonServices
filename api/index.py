@@ -4,7 +4,7 @@ from flask import jsonify, request, send_file
 from flask_cors import CORS
 from api.controllers.auth import AuthController
 from api.controllers.admin import UserMusicController
-from api.mgen import MgenController
+from api.controllers.mgen import MgenController
 app = Server.getServer()
 AuthController = AuthController()
 UserMusicController = UserMusicController()

@@ -3,8 +3,8 @@ from io import BytesIO
 import os
 import time
 import random
-from pyo import *
 from datetime import datetime
+from pyo import EventScale, Events, EventSeq, Server, Metro, CosTable, TrigEnv, Iter, Sine
 from typing import List, Dict
 from midiutil import MIDIFile
 from api.db.connection import Database

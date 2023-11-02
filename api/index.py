@@ -1,9 +1,11 @@
 import os
-from api.serverComposer import Server
+from serverComposer import Server
 from flask import jsonify, request, send_file
 from flask_cors import CORS
-from api.controllers.auth import AuthController
-from api.controllers.admin import UserMusicController
+from controllers.auth import AuthController
+from controllers.admin import UserMusicController
+import pydub
+import music21
 # from api.controllers.mgen import MgenController
 app = Server.getServer()
 AuthController = AuthController()
@@ -75,16 +77,47 @@ def reset_password():
     return jsonify({ "message": "Error"}) , 400
 
 
-@app.route('/admin/music/generate/<string:token>')
+@app.route('/admin/music/generate/<string:token>', methods=["POST"])
 def generate_music(token):
     # MgenController.main()
-    return f"Music generator for: {token}"
+    datos = request.json
+    print(datos)
+    UserMusicController.GenerateMusic(datos=datos)
+    return jsonify({ 'data' : list(UserMusicController.getListMusicGenerated()) }) , 200
 
 @app.route('/admin/music/list/<string:token>')
 def list_music(token):
     return jsonify({ 'data' : list(UserMusicController.getListMusicGenerated()) }) , 200
 
 
+@app.route("/convert", methods=["POST"])
+def convert():
+  """Converts an MP3 file to a PDF of sheet music.
+
+  Args:
+    None.
+
+  Returns:
+    A PDF of sheet music.
+  """
+
+  # Get the MP3 file from the request.
+  mp3_file = request.files["mp3_file"]
+
+  # Extract the audio data from the MP3 file.
+  audio_segment = pydub.AudioSegment.from_mp3(mp3_file)
+
+  # Transcribe the audio data into sheet music notation.
+  score = music21.converter.parse(audio_segment)
+
+  # Export the sheet music notation to a PDF file.
+  pdf_file = score.write("pdf", fp="output.pdf")
+
+  # Return the PDF file to the client.
+  return send_file(pdf_file, mimetype="application/pdf")
+
+
+CORS(app, origins=['https://composer-music-frontend.vercel.app'])
+CORS(app, resources={r"/auth/*": {"origins": "https://composer-music-frontend.vercel.app"}})
 if __name__ == '__main__':
-    CORS(app)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000,debug=True)

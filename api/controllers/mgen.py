@@ -6,8 +6,8 @@ import random
 from datetime import datetime
 from typing import List, Dict
 from midiutil import MIDIFile
-from api.db.connection import Database
-from algorithms.genetic import generate_genome, Genome, selection_pair, single_point_crossover, mutation
+from controllers.connection import Database
+from controllers.algorithms.genetic import generate_genome, Genome, selection_pair, single_point_crossover, mutation
 client = Database().getConnection()
 musicComposerDB = client.musicComposerCollection
 musicComposerDBFiles = musicComposerDB.files
@@ -76,18 +76,32 @@ class MgenController():
         midi_data = midi_buffer.getvalue()
         midi_buffer.close()
 
+        # Define la ruta de la carpeta pública
+        public_folder = 'public/'
+
+        # Asegúrate de que la carpeta pública exista
+        if not os.path.exists(public_folder):
+            os.makedirs(public_folder)
+
+        # Guarda el archivo MIDI en la carpeta pública
+        midi_file_path = os.path.join(public_folder, filename)
+        with open(midi_file_path, 'wb') as midi_file:
+            midi_file.write(midi_data)
+
+
         # Encode binary data in Base64
         midi_data_base64 = base64.b64encode(midi_data).decode('utf-8')
 
         # Save the bytes to the MongoDB database
-        musicComposerDBFiles.insert_one({"filename": filename, "midi_data": midi_data_base64})
+        musicComposerDBFiles.insert_one({"filename": filename, 'genome': genome, 'num_bars': num_bars, 'num_notes': num_notes, 'num_steps': num_steps, 'pauses': pauses, 'key': key, 'scale': scale, 'root': root, 'bpm': bpm,  "midi_data": midi_data_base64})
+
 
     def main(self, num_bars=8, num_notes=4, num_steps=1, pauses=True, key="C", scale="major", root=4,
              population_size=10, num_mutations=2, mutation_probability=0.5, bpm=128):
 
         folder = f"{str(int(datetime.now().timestamp()))}"
 
-        os.makedirs(folder, exist_ok=True)
+        os.makedirs(f"public/{folder}", exist_ok=True)
 
         population = [generate_genome(num_bars * num_notes * BITS_PER_NOTE) for _ in range(population_size)]
 
@@ -122,7 +136,7 @@ class MgenController():
             print(f"population {population_id} done")
 
             for i, genome in enumerate(population):
-                filename = f"{folder}/{scale}-{key}-{i}.mid"
+                filename = f"{folder}/{scale}-{i}.mid"
                 self.save_genome_to_midi(filename, genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)
 
             print(f"Saved to folder: {folder}")
@@ -130,5 +144,3 @@ class MgenController():
             running = False
             population = next_generation
             population_id += 1
-
-

@@ -4,7 +4,10 @@ from flask import jsonify, request, send_file
 from flask_cors import CORS
 from controllers.auth import AuthController
 from controllers.admin import UserMusicController
+from pydub import AudioSegment
 import pydub
+AudioSegment.ffmpeg = "C:\\ffmpeg-6.0-essentials_build\\bin\\ffmpeg.exe"
+AudioSegment.ffprobe = "C:\\ffmpeg-6.0-essentials_build\\bin\\ffprobe.exe"
 import music21
 # from api.controllers.mgen import MgenController
 app = Server.getServer()
@@ -57,12 +60,13 @@ def register():
 
     return jsonify({ "message": "Error"}) , 400
 
-@app.route('/auth/forget-password', methods=['POST'])
+@app.route('/auth/forgot-password', methods=['POST'])
 def forget_password():
     data = request.json
     email = data.get('email')
     if (email):
-        return jsonify(AuthController.register(email)) , 200
+        print(email)
+        return jsonify(AuthController.forgetPassword(email)) , 200
 
     return jsonify({ "message": "Error"}) , 400
 
@@ -72,7 +76,7 @@ def reset_password():
     token = data.get('token')
     password = data.get('password')
     if (token and password):
-        return jsonify(AuthController.register(token, password)) , 200
+        return jsonify(AuthController.resetPassword(token, password)) , 200
 
     return jsonify({ "message": "Error"}) , 400
 
@@ -117,7 +121,6 @@ def convert():
   return send_file(pdf_file, mimetype="application/pdf")
 
 
-CORS(app, origins=['https://composer-music-frontend.vercel.app'])
-CORS(app, resources={r"/auth/*": {"origins": "https://composer-music-frontend.vercel.app"}})
+CORS(app)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000,debug=True)

@@ -1,7 +1,8 @@
 import base64
 from io import BytesIO
 import os
-import time
+from music21 import converter, stream
+from matplotlib.backends.backend_pdf import PdfPages
 import random
 from datetime import datetime
 from typing import List, Dict
@@ -92,12 +93,31 @@ class MgenController():
         # Encode binary data in Base64
         midi_data_base64 = base64.b64encode(midi_data).decode('utf-8')
 
+        # # Cargar el archivo MIDI
+        # midi_stream = converter.parse(midi_file_path)
+
+        # # Crear una página PDF
+        # pdf_file_path = os.path.join(public_folder, midi_file_path + "partitura.pdf");
+        # pdf_pages = PdfPages(pdf_file_path)
+
+        # # Crear una partitura
+        # score = stream.Score()
+
+        # # Agregar el flujo MIDI a la partitura
+        # score.insert(0, midi_stream)
+
+        # # Dibujar la partitura en PDF
+        # score.show()
+        # score.write('musicxml.pdf', pdf_file_path)
+
+        # # Cerrar la página PDF
+        # pdf_pages.close()
         # Save the bytes to the MongoDB database
         musicComposerDBFiles.insert_one({"filename": filename, 'genome': genome, 'num_bars': num_bars, 'num_notes': num_notes, 'num_steps': num_steps, 'pauses': pauses, 'key': key, 'scale': scale, 'root': root, 'bpm': bpm,  "midi_data": midi_data_base64})
 
 
     def main(self, num_bars=8, num_notes=4, num_steps=1, pauses=True, key="C", scale="major", root=4,
-             population_size=10, num_mutations=2, mutation_probability=0.5, bpm=128):
+             population_size=10, num_mutations=2, mutation_probability=0.5, bpm=128, name="Song"):
 
         folder = f"{str(int(datetime.now().timestamp()))}"
 
@@ -136,7 +156,7 @@ class MgenController():
             print(f"population {population_id} done")
 
             for i, genome in enumerate(population):
-                filename = f"{folder}/{scale}-{i}.mid"
+                filename = f"{folder}/{name}-{scale}-{key}-{i}.mid"
                 self.save_genome_to_midi(filename, genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)
 
             print(f"Saved to folder: {folder}")

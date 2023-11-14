@@ -1,12 +1,19 @@
 
+import jwt
 import hashlib
-# Conexion a mongodb
+import smtplib
 from db.connection import Database
+from email.message import EmailMessage
+
+# Conexion a mongodb
 client = Database().getConnection()
-
 musicComposerDB = client.musicComposerCollection
-
 usersDb = musicComposerDB.users
+
+remitente = "jhon.puentes@qcode.co"
+contraseña = "Jhonpololo21."
+servidor = "smtp.gmail.com"
+
 
 class AuthController:
 
@@ -61,13 +68,43 @@ class AuthController:
             'email': email,
             'password': hashed_password,
         })
+
         return {'username': username, 'email': email, 'password': password}
     
     def resetPassword(self, token, password):
+        print(token, password)
+        payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        user = usersDb.find_one({
+                                'email': payload['email']
+                            })
+        if user is not None:
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            usersDb.update_one({
+                'email': payload.email,
+            }, { "$set": { 'password': hashed_password } })
+
         return { 'token': token , 'password': password}
     
-    def forgetPassword(self, email):
-        return { 'email': email }
+    def forgetPassword(self, emailToDeleveri):
+        payload = {
+            "email": emailToDeleveri,
+        }
+
+        user = usersDb.find_one({
+                                'email': emailToDeleveri
+                            })
+        if user is not None:
+            token = jwt.encode(payload, "secret", algorithm="HS256")
+            email = EmailMessage()
+            email["From"] = remitente
+            email["To"] = emailToDeleveri
+            email["Subject"] = "Recuperar contraseña"
+            email.set_content("Para reestablecer la contraseña siga el siguiente link: http://localhost:3002/reset-password?token=" + token) 
+            smtp = smtplib.SMTP_SSL(servidor)
+            smtp.login(remitente, contraseña)
+            smtp.sendmail(remitente, emailToDeleveri, email.as_string())
+            smtp.quit()  
+        return { 'email': 'correcto' }
     
     
     

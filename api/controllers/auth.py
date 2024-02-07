@@ -2,7 +2,7 @@
 import jwt
 import hashlib
 import smtplib
-from .db.connection import Database
+from ..db.connection import Database
 from email.message import EmailMessage
 
 # Conexion a mongodb

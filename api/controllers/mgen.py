@@ -3,7 +3,7 @@ from io import BytesIO
 import os
 import uuid
 import random
-from pyo import *
+from pyo import EventScale
 from datetime import datetime
 from typing import List, Dict
 from midiutil import MIDIFile
@@ -179,11 +179,6 @@ class MgenController():
             for i, genome in enumerate(population):
                 filename = f"{folder}/{name}-{scale}-{key}-{i}.mid"
                 self.save_genome_to_midi(email, filename, genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)
-                midi_file = mido.MidiFile('public/' + filename)
-                synth = mido.backend.fluidsynth.FluidSynth()
-                with open('public/' + filename + '.wav', 'wb') as f:
-                    synth.write_audio(f, midi_file)
-
 
 
             print(f"Saved to folder: {folder}")

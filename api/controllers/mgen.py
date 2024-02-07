@@ -2,7 +2,6 @@ import base64
 from io import BytesIO
 import os
 import uuid
-from music21 import converter, stream
 from matplotlib.backends.backend_pdf import PdfPages
 import random
 from pyo import *

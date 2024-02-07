@@ -2,9 +2,9 @@ import jwt
 import datetime
 import uuid
 from ..db.connection import Database
-from ..controllers.mgen import MgenController
+#from ..controllers.mgen import MgenController
 client = Database().getConnection()
-MgenController = MgenController()
+#MgenController = MgenController()
 musicComposerDB = client.musicComposerCollection
 
 filesDb = musicComposerDB.files
@@ -37,7 +37,7 @@ class UserMusicController():
             datos['pauses'] = True
         else:
             datos['pauses'] = False
-        MgenController.main(email=email, key=datos['key'], num_bars=int(datos['num_bars']), scale= datos['scale'], num_steps=int(datos['num_steps']), num_notes=int(datos['num_notes']), num_mutations=int(datos['nm']), name=datos['name'], root=int(datos['name']), pauses=datos['pauses'], mutation_probability=float(datos['pm']), population_size=int(datos['cm']))
+        #MgenController.main(email=email, key=datos['key'], num_bars=int(datos['num_bars']), scale= datos['scale'], num_steps=int(datos['num_steps']), num_notes=int(datos['num_notes']), num_mutations=int(datos['nm']), name=datos['name'], root=int(datos['name']), pauses=datos['pauses'], mutation_probability=float(datos['pm']), population_size=int(datos['cm']))
         return "Melodias generadas exitosamente."
     
     def saveTranscript(self, token , text):

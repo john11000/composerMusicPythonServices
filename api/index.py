@@ -1,9 +1,9 @@
 import os
-from serverComposer import Server
+from .serverComposer import Server
 from flask import jsonify, request, send_file
 from flask_cors import CORS
-from controllers.auth import AuthController
-from controllers.admin import UserMusicController as MC
+from .controllers.auth import AuthController
+from .controllers.admin import UserMusicController as MC
 from pydub import AudioSegment
 import speech_recognition as sr
 AudioSegment.ffmpeg = "C:\\ffmpeg-6.0-essentials_build\\bin\\ffmpeg.exe"

@@ -2,7 +2,7 @@ import jwt
 import datetime
 import uuid
 from ..db.connection import Database
-from .controllers.mgen import MgenController
+from ..controllers.mgen import MgenController
 client = Database().getConnection()
 MgenController = MgenController()
 musicComposerDB = client.musicComposerCollection

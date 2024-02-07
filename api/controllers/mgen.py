@@ -9,8 +9,8 @@ from pyo import *
 from datetime import datetime
 from typing import List, Dict
 from midiutil import MIDIFile
-from .controllers.connection import Database
-from .controllers.algorithms.genetic import generate_genome, Genome, selection_pair, single_point_crossover, mutation
+from ..controllers.connection import Database
+from ..controllers.algorithms.genetic import generate_genome, Genome, selection_pair, single_point_crossover, mutation
 from midi2audio import FluidSynth
 
 client = Database().getConnection()

@@ -4,10 +4,7 @@ from flask import jsonify, request, send_file
 from flask_cors import CORS
 from .controllers.auth import AuthController
 from .controllers.admin import UserMusicController as MC
-from pydub import AudioSegment
-import speech_recognition as sr
-AudioSegment.ffmpeg = "C:\\ffmpeg-6.0-essentials_build\\bin\\ffmpeg.exe"
-AudioSegment.ffprobe = "C:\\ffmpeg-6.0-essentials_build\\bin\\ffprobe.exe"
+
 # from api.controllers.mgen import MgenController
 app = Server.getServer()
 AuthController = AuthController()
@@ -121,33 +118,6 @@ def ediTranscript():
         [data, isError] = UserMusicController.editTranscript(file, text)
         return jsonify({ 'data': data , 'isError': isError}) , 200
     return jsonify({ 'data' : 'Ha ocurrido un error al guardar el texto', 'isError': True }) , 405
-
-@app.route("/transcribe", methods=["POST"])
-def audio_to_text():
-    # Verifica que la solicitud sea de tipo POST
-    if request.method == 'POST':
-        # Verifica que el archivo de audio esté presente en la solicitud
-        if 'audio' not in request.files:
-            return jsonify({'error': 'No se encontró el archivo de audio'}), 400
-        audio_file = request.files['audio']
-        # Verifica que el archivo tenga una extensión válida
-        if audio_file and audio_file.filename.endswith(('.wav', '.mp3')):
-            try:
-                # Convierte el archivo a formato WAV
-                audio = AudioSegment.from_file(audio_file)
-                audio.export("temp.wav", format="wav")
-                # Reconoce el audio en formato WAV
-                recognizer = sr.Recognizer()
-                with sr.AudioFile("temp.wav") as source:
-                    audio_data = recognizer.record(source)
-                    text = recognizer.recognize_google(audio_data)
-                    return jsonify({'text': text}), 200
-            except sr.UnknownValueError:
-                return jsonify({'error': 'No se pudo reconocer el audio'}), 500
-            except Exception as e:
-                return jsonify({'error': f'Error al procesar el archivo: {str(e)}'}), 500
-        else:
-            return jsonify({'error': 'Formato de archivo no compatible. Se admiten archivos WAV y MP3'}), 400
 
 @app.route('/admin/transcript/list')
 def list_transcript():

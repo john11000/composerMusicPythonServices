@@ -3,17 +3,16 @@ from serverComposer import Server
 from flask import jsonify, request, send_file
 from flask_cors import CORS
 from controllers.auth import AuthController
-from controllers.admin import UserMusicController
+from controllers.admin import UserMusicController as MC
 from pydub import AudioSegment
-import pydub
+import speech_recognition as sr
 AudioSegment.ffmpeg = "C:\\ffmpeg-6.0-essentials_build\\bin\\ffmpeg.exe"
 AudioSegment.ffprobe = "C:\\ffmpeg-6.0-essentials_build\\bin\\ffprobe.exe"
-import music21
 # from api.controllers.mgen import MgenController
 app = Server.getServer()
 AuthController = AuthController()
-UserMusicController = UserMusicController()
-# MgenController = MgenController()
+UserMusicController = MC()
+# MgenControllfrom pydub import AudioSegment
 
 @app.route("/public/<path:filename>")
 def public(filename):
@@ -40,8 +39,6 @@ def login():
     if (email and password):
         if AuthController.validareCredentials(email, password) == False:
             return jsonify({ 'message': 'Credenciales no validas', 'error' : True}) , 400
-
-
         return jsonify(AuthController.login(email, password)) , 200
 
     return jsonify({ "message": "Error: Credenciales invalidas"}) , 400
@@ -85,41 +82,90 @@ def reset_password():
 def generate_music(token):
     # MgenController.main()
     datos = request.json
-    print(datos)
-    UserMusicController.GenerateMusic(datos=datos)
+    UserMusicController.GenerateMusic(datos=datos, token=token)
     return jsonify({ 'data' : list(UserMusicController.getListMusicGenerated()) }) , 200
 
 @app.route('/admin/music/list/<string:token>')
 def list_music(token):
-    return jsonify({ 'data' : list(UserMusicController.getListMusicGenerated()) }) , 200
+    return jsonify({ 'data' : list(UserMusicController.getListMusicGenerated(token)) }) , 200
+
+@app.route('/admin/music/list/uuid/<string:file>')
+def list_music_by_id(file):
+    return jsonify({ 'data' : list(UserMusicController.getListMusicGeneratedByUuid(file)) }) , 200
+
+@app.route('/admin/music/favorite', methods=['PUT', 'POST'])
+def toggle_favorite():
+    datos = request.json
+    print(request.headers.get('authorization'))
+    if (datos['id']): 
+        return jsonify({ 'data' : list(UserMusicController.changeStateMelody(id=datos['id'], state=datos['state'])) }) , 200
+    return jsonify({ 'data' : 'Ha ocurrido un error al cambiar los datos', 'isError': True }) , 405
 
 
-@app.route("/convert", methods=["POST"])
-def convert():
-  """Converts an MP3 file to a PDF of sheet music.
+@app.route('/admin/transcript/save', methods=['POST'])
+def saveTranscript():
+    datos = request.json
+    token = datos.get('token')
+    text = datos.get('text')
+    if (token and text):
+        [data, isError] = UserMusicController.saveTranscript(token, text)
+        return jsonify({ 'data': data , 'isError': isError}) , 200
+    return jsonify({ 'data' : 'Ha ocurrido un error al guardar el texto', 'isError': True }) , 405
 
-  Args:
-    None.
+@app.route('/admin/transcript/edit', methods=['POST'])
+def ediTranscript():
+    datos = request.json
+    file = datos.get('file')
+    text = datos.get('text')
+    if (file and text):
+        [data, isError] = UserMusicController.editTranscript(file, text)
+        return jsonify({ 'data': data , 'isError': isError}) , 200
+    return jsonify({ 'data' : 'Ha ocurrido un error al guardar el texto', 'isError': True }) , 405
 
-  Returns:
-    A PDF of sheet music.
-  """
+@app.route("/transcribe", methods=["POST"])
+def audio_to_text():
+    # Verifica que la solicitud sea de tipo POST
+    if request.method == 'POST':
+        # Verifica que el archivo de audio esté presente en la solicitud
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No se encontró el archivo de audio'}), 400
+        audio_file = request.files['audio']
+        # Verifica que el archivo tenga una extensión válida
+        if audio_file and audio_file.filename.endswith(('.wav', '.mp3')):
+            try:
+                # Convierte el archivo a formato WAV
+                audio = AudioSegment.from_file(audio_file)
+                audio.export("temp.wav", format="wav")
+                # Reconoce el audio en formato WAV
+                recognizer = sr.Recognizer()
+                with sr.AudioFile("temp.wav") as source:
+                    audio_data = recognizer.record(source)
+                    text = recognizer.recognize_google(audio_data)
+                    return jsonify({'text': text}), 200
+            except sr.UnknownValueError:
+                return jsonify({'error': 'No se pudo reconocer el audio'}), 500
+            except Exception as e:
+                return jsonify({'error': f'Error al procesar el archivo: {str(e)}'}), 500
+        else:
+            return jsonify({'error': 'Formato de archivo no compatible. Se admiten archivos WAV y MP3'}), 400
 
-  # Get the MP3 file from the request.
-  mp3_file = request.files["mp3_file"]
+@app.route('/admin/transcript/list')
+def list_transcript():
+    try:
+        [data, isError] = UserMusicController.listTrascript()
+        return jsonify({'data': list(data), 'isError': isError}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'data': 'Ha ocurrido un error', 'isError': True}), 500
 
-  # Extract the audio data from the MP3 file.
-  audio_segment = pydub.AudioSegment.from_mp3(mp3_file)
-
-  # Transcribe the audio data into sheet music notation.
-  score = music21.converter.parse(audio_segment)
-
-  # Export the sheet music notation to a PDF file.
-  pdf_file = score.write("pdf", fp="output.pdf")
-
-  # Return the PDF file to the client.
-  return send_file(pdf_file, mimetype="application/pdf")
-
+@app.route('/admin/transcript/list/<string:file>')
+def list_transcript_by_file(file):
+    try:
+        [data, isError] = UserMusicController.listTrascript(file)
+        return jsonify({'data': list(data), 'isError': isError}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'data': 'Ha ocurrido un error', 'isError': True}), 500
 
 CORS(app)
 if __name__ == '__main__':

@@ -20,7 +20,7 @@ class AuthController:
     def login(self, email, password):
         result = self.validareCredentials(email, password)
         if result:
-            return {'email': email, 'password': password, 'token': ''}
+            return {'email': email, 'accessToken':  jwt.encode({'email': email }, "secret", algorithm="HS256")}
         return False
 
     
@@ -69,7 +69,7 @@ class AuthController:
             'password': hashed_password,
         })
 
-        return {'username': username, 'email': email, 'password': password}
+        return {'username': username, 'email': email, 'accessToken':  jwt.encode({'email': email }, "secret", algorithm="HS256")}
     
     def resetPassword(self, token, password):
         print(token, password)

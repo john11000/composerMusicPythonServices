@@ -1,34 +1,35 @@
-import mido
-import pydub
+from midi2audio import FluidSynth
+from pydub import AudioSegment
 
-def convert_mid_to_mp3(mid_file_path, mp3_file_path):
-    """
-    Convertir un archivo MIDI a MP3.
+# Rutas de los archivos MIDI y WAV
+midi_file = "public/1707076033/4-major-C-0.mid"
+wav_file = "public/1707076033/4-major-C-0.mid.wav"
 
-    Args:
-        mid_file_path: La ruta del archivo MIDI de entrada.
-        mp3_file_path: La ruta del archivo MP3 de salida.
+# Rutas de los archivos de salida
+output_file = 'mezcla.wav'
 
-    Returns:
-        None.
-    """
+# Configuración de FluidSynth (puedes necesitar instalar FluidSynth y un soundfont)
+fs = FluidSynth()
 
-    # Leer el archivo MIDI.
-    midi = mido.MidiFile(mid_file_path)
+# Convertir el archivo MIDI a WAV
+fs.midi_to_audio(midi_file, 'temp.wav')
 
-    # Crear un objeto AudioSegment a partir del archivo MIDI.
-    audio = pydub.AudioSegment.from_midi(midi)
+# Cargar los archivos WAV utilizando pydub
+midi_audio = AudioSegment.from_wav('temp.wav')
+wav_audio = AudioSegment.from_wav(wav_file)
 
-    # Exportar el objeto AudioSegment a MP3.
-    audio.export(mp3_file_path, format="mp3")
+# Asegurarse de que ambos archivos tengan la misma frecuencia de muestreo y canales
+midi_audio = midi_audio.set_frame_rate(wav_audio.frame_rate)
+midi_audio = midi_audio.set_channels(wav_audio.channels)
 
+# Mezclar los archivos WAV
+output_audio = midi_audio.overlay(wav_audio)
 
-if __name__ == "__main__":
-    # La ruta del archivo MIDI de entrada.
-    mid_file_path = "./major-0.mid"
+# Exportar la mezcla a un nuevo archivo WAV
+output_audio.export(output_file, format='wav')
 
-    # La ruta del archivo MP3 de salida.
-    mp3_file_path = "my_song.mp3"
+# Eliminar el archivo temporal
+import os
+os.remove('temp.wav')
 
-    # Convertir el archivo MIDI a MP3.
-    convert_mid_to_mp3(mid_file_path, mp3_file_path)
+print(f'Mezcla completa. El archivo de salida se encuentra en: {output_file}')

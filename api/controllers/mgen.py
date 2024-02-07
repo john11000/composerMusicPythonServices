@@ -1,17 +1,22 @@
 import base64
 from io import BytesIO
 import os
+import uuid
 from music21 import converter, stream
 from matplotlib.backends.backend_pdf import PdfPages
 import random
+from pyo import *
 from datetime import datetime
 from typing import List, Dict
 from midiutil import MIDIFile
 from controllers.connection import Database
 from controllers.algorithms.genetic import generate_genome, Genome, selection_pair, single_point_crossover, mutation
+from midi2audio import FluidSynth
+
 client = Database().getConnection()
 musicComposerDB = client.musicComposerCollection
 musicComposerDBFiles = musicComposerDB.files
+
 BITS_PER_NOTE = 4
 KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"]
 SCALES = ["major", "minorM", "dorian", "phrygian", "lydian", "mixolydian", "majorBlues", "minorBlues"]
@@ -28,16 +33,34 @@ class MgenController():
 
         note_length = 4 / float(num_notes)
 
+        scl = EventScale(root=key, scale=scale, first=root)
         # Replace Pyo-related code with MIDI generation logic here
         melody = {
-            "notes": [random.randint(0, 127) for _ in range(num_bars * num_notes)],
-            "velocity": [127 for _ in range(num_bars * num_notes)],
-            "beat": [note_length for _ in range(num_bars * num_notes)],
+        "notes": [],
+        "velocity": [],
+        "beat": []
         }
 
+        for note in notes:
+            integer = self.int_from_bits(note)
+
+            if not pauses:
+                integer = int(integer % pow(2, BITS_PER_NOTE - 1))
+
+            if integer >= pow(2, BITS_PER_NOTE - 1):
+                melody["notes"] += [0]
+                melody["velocity"] += [0]
+                melody["beat"] += [note_length]
+            else:
+                if len(melody["notes"]) > 0 and melody["notes"][-1] == integer:
+                    melody["beat"][-1] += note_length
+                else:
+                    melody["notes"] += [integer]
+                    melody["velocity"] += [127]
+                    melody["beat"] += [note_length]
         steps = []
         for step in range(num_steps):
-            steps.append([note for note in melody["notes"]])
+            steps.append([scl[(note+step*2) % len(scl)] for note in melody["notes"]])
 
         melody["notes"] = steps
         return melody
@@ -48,7 +71,7 @@ class MgenController():
         rating = 4  # Assign a fixed value for 'rating'
         return rating
 
-    def save_genome_to_midi(self, filename: str, genome: Genome, num_bars: int, num_notes: int, num_steps: int,
+    def save_genome_to_midi(self, email, filename: str, genome: Genome, num_bars: int, num_notes: int, num_steps: int,
                             pauses: bool, key: str, scale: str, root: int, bpm: int):
         melody = self.genome_to_melody(genome, num_bars, num_notes, num_steps, pauses, key, scale, root)
 
@@ -112,13 +135,14 @@ class MgenController():
 
         # # Cerrar la página PDF
         # pdf_pages.close()
-        # Save the bytes to the MongoDB database
-        musicComposerDBFiles.insert_one({"filename": filename, 'genome': genome, 'num_bars': num_bars, 'num_notes': num_notes, 'num_steps': num_steps, 'pauses': pauses, 'key': key, 'scale': scale, 'root': root, 'bpm': bpm,  "midi_data": midi_data_base64})
+        # Save the bytes to the MongoDB databaseFilename
+        musicComposerDBFiles.insert_one({ 'email': email, 'uuid': str(uuid.uuid4()), 'filename': filename, 'genome': genome, 'num_bars': num_bars, 'num_notes': num_notes, 'num_steps': num_steps, 'pauses': pauses, 'key': key, 'scale': scale, 'root': root, 'bpm': bpm, "midi_data": midi_data_base64, "isFavorite": False })
 
 
-    def main(self, num_bars=8, num_notes=4, num_steps=1, pauses=True, key="C", scale="major", root=4,
+    def main(self, email, num_bars=8, num_notes=4, num_steps=1, pauses=True, key="C", scale="major", root=4,
              population_size=10, num_mutations=2, mutation_probability=0.5, bpm=128, name="Song"):
-
+        print('DATOS -> ' , num_bars, num_notes, num_steps, pauses, key, scale, root,
+             population_size, num_mutations, mutation_probability, bpm, name)
         folder = f"{str(int(datetime.now().timestamp()))}"
 
         os.makedirs(f"public/{folder}", exist_ok=True)
@@ -157,7 +181,13 @@ class MgenController():
 
             for i, genome in enumerate(population):
                 filename = f"{folder}/{name}-{scale}-{key}-{i}.mid"
-                self.save_genome_to_midi(filename, genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)
+                self.save_genome_to_midi(email, filename, genome, num_bars, num_notes, num_steps, pauses, key, scale, root, bpm)
+                midi_file = mido.MidiFile('public/' + filename)
+                synth = mido.backend.fluidsynth.FluidSynth()
+                with open('public/' + filename + '.wav', 'wb') as f:
+                    synth.write_audio(f, midi_file)
+
+
 
             print(f"Saved to folder: {folder}")
 
